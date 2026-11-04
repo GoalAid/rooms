@@ -1,2 +1,2 @@
 # rooms
-hotel room management
+an app for hotel room management
