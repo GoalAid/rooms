@@ -37,7 +37,7 @@
 <body>
 
     <h1>收款码</h1>
-   <img src="wx_qr_code.png" id="img" class="center"> 
+   <img src="/assets/qr_code/wx_qr_code.png" id="img" class="center"> 
     <button onclick="toggleQRCode()">切换收款码</button>
     <button onclick="downloadQRCode()">下载收款码</button>
  
@@ -52,9 +52,9 @@
     const image = document.getElementById("img");
     function toggleQRCode() { 
         if (isWechatPay) {
-            image.src = "alipay_qr_code.jpg";
+            image.src = "/assets/qr_code/alipay_qr_code.jpg";
         } else {
-            image.src = "wx_qr_code.png";
+            image.src = "/assets/qr_code/wx_qr_code.png";
         }
         isWechatPay = !isWechatPay;
     }
