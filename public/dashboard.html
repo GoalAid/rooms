@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: #f5f7fb;
+      color: #172033;
+      font-family: Arial, sans-serif;
+    }
+
+    main {
+      width: 100%;
+      max-width: 620px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 1.8rem;
+    }
+     
+     p {
+      font-size: 1.125em;
+     }
+
+     .account-details p {
+       margin: 4px 0;
+       line-height: 1.3;
+     }
+
+    .intro {
+      margin: 0 0 18px;
+      color: #667085;
+      line-height: 1.5;
+    }
+
+    .card {
+      padding: 16px;
+      border: 1px solid #e5e9f0;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 4px 16px rgb(30 45 75 / 6%);
+     }
+
+    .plans {
+       display: grid;
+       grid-template-columns: 1fr 1fr;
+       gap: 10px;
+     }
+
+   .plan {
+      padding: 12px;
+      border: 1px solid #e5e9f0;
+      border-radius: 10px;
+    }
+
+   .plan h2 {
+      margin: 0 0 5px;
+      font-size: 1rem;
+   }
+
+   .price {
+      margin: 0 0 4px;
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+
+   .duration {
+      margin: 0 0 10px;
+      color: #667085;
+      font-size: 0.85rem;
+   }
+
+   @media (max-width: 600px) {
+    .plans {
+    grid-template-columns: 1fr;
+    }
+   }
+
+    .button {
+      display: block;
+      padding: 11px 14px;
+      border-radius: 8px;
+      background: #3659c9;
+      color: #fff;
+      font-weight: 700;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .am {
+      margin: 10px 0;
+      font-size: 1rem;
+      font-style: italic;
+      line-height: 1.3;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+  </style>
+</head>
+<body>
+  <main>
+    <section id="accountView">
+  <h1 id="account-status">Loading account status…</h1>
+
+<div class="account-details">
+<p id="account-username"></p>
+<p style="font-weight: bold; font-size: 1.5em; color: green" id="account-hotel"></p>
+  <p style="font-weight: bold; color:#896415" id="account-expiry"></p>
+</div>
+  <p class="am"; id="account-message"></p>
+</section>
+
+<section id="plansView" hidden>
+  <p class="intro">Choose a plan to continue.</p>
+  <div class="card">
+        <div class="plans">
+          <article class="plan">
+            <h2>Monthly</h2>
+            <p class="price">$10</p>
+            <p class="duration">One month</p>
+            <a class="button" href="/payment.html">Choose monthly</a>
+          </article>
+
+          <article class="plan">
+           <h2>Yearly</h2>
+           <p class="price">$100</p>
+           <p class="duration">One year</p>
+           <a class="button" href="/payment.html">Choose yearly</a>
+          </article>
+        </div>
+      </div>
+<p><a id="rooms-link" href="/rooms.html" hidden>
+    Open hotel room management
+  </a>
+</p>
+</section>
+
+<script>
+  async function loadDashboard() {
+    const statusElement = document.getElementById("account-status");
+    const usernameElement = document.getElementById("account-username");
+    const hotelElement = document.getElementById("account-hotel");
+    const expiryElement = document.getElementById("account-expiry");
+    const messageElement = document.getElementById("account-message");
+    const plansView = document.getElementById("plansView");
+    const token = localStorage.getItem("token");
+    const roomsLink = document.getElementById("rooms-link");
+
+    if (!token) {
+      statusElement.textContent = "Please log in to view your account.";
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/hotel/dashboard", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await response.json();
+     
+      if (!response.ok) {
+        statusElement.textContent =
+          data.error || "Unable to load account status.";
+        plansView.hidden = false;
+        return;
+      }
+
+     usernameElement.textContent = `Username: ${data.username || "Not provided"}`;
+      hotelElement.textContent = `${data.hotelName || "Not provided"}`;
+
+      const expiry = new Date(data.expiresAt);
+
+      if (Number.isNaN(expiry.getTime())) {
+        statusElement.textContent = "Account expiry date is unavailable.";
+        return;
+      }
+
+      const paid = data.status === "Active";
+      statusElement.textContent = paid ? "Paid plan active" : "7-day trial active";
+
+      roomsLink.hidden = false;
+
+      expiryElement.textContent =
+        `Expires: ${expiry.toLocaleDateString().replaceAll('/', '-')}`;
+
+      messageElement.textContent = paid
+        ? "Your subscription is active."
+        : "(* You can choose a plan at any time during your trial.)";
+
+      // Show plan options for trial users, but not paid subscribers.
+      plansView.hidden = paid;
+    } catch (error) {
+      console.error(error);
+      statusElement.textContent = "Could not load account status.";
+    }
+  }
+
+  loadDashboard();
+</script>
+</body>
+  </html>
