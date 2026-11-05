@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hotel Service</title>
+  <style>
+    body { font: 16px system-ui, sans-serif; max-width: 480px; margin: 3rem auto; padding: 0 1rem; }
+    input, button { box-sizing: border-box; width: 100%; padding: .7rem; margin: .4rem 0; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <h1>Hotel Service</h1>
+  <form id="login-form">
+    <label>Username <input name="username" required></label>
+    <label>Password <input name="password" type="password" required></label>
+    <button type="submit">Log in</button>
+  </form>
+  <p><a class="button" href="/register.html">Create an account</a></p>
+  <pre id="result" aria-live="polite"></pre>
+
+  <script>
+    let token = "";
+    const result = document.querySelector("#result");
+
+    document.querySelector("#login-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = new FormData(event.currentTarget);
+
+      try {
+        const response = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: form.get("username"),
+            password: form.get("password")
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Login failed");
+        token = data.token;
+      //  result.textContent = "Logged in successfully.";
+
+
+localStorage.setItem("token", data.token);
+  window.location.href = "/dashboard";
+      } catch (error) {
+        result.textContent = error.message;
+      }
+    });  
+  </script>
+</body>
+</html>
