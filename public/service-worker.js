@@ -1,7 +1,7 @@
 const CACHE = "hotel-app-v1";
 const APP_FILES = [ 
   "/rooms.html",
-  "/icon-192.png"
+  "/assets/icon/icon-192.png"
 ];
 
 self.addEventListener("install", event => {
