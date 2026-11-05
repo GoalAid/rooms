@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create an account</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: #f5f7fb;
+      color: #172033;
+      font-family: Arial, sans-serif;
+    }
+
+    main {
+      width: 100%;
+      max-width: 520px;
+      padding: 28px;
+      border: 1px solid #e5e9f0;
+      border-radius: 14px;
+      background: #fff;
+      box-shadow: 0 8px 28px rgb(30 45 75 / 6%);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.7rem;
+    }
+
+    .intro {
+      margin: 0 0 24px;
+      color: #667085;
+      line-height: 1.5;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid #cfd5df;
+      border-radius: 8px;
+      font: inherit;
+    }
+
+    input:focus {
+      outline: 3px solid #dce5ff;
+      border-color: #3659c9;
+    }
+
+    .optional {
+      color: #667085;
+      font-weight: 400;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 6px;
+      padding: 12px;
+      border: 0;
+      border-radius: 8px;
+      background: #3659c9;
+      color: #fff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+
+    #message {
+      min-height: 1.4em;
+      margin: 14px 0 0;
+      color: #b42318;
+      font-size: 0.95rem;
+    }
+
+    #message.success {
+      color: #197244;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Create your account</h1>
+    <p class="intro">Enter your hotel and account details to get started.</p>
+
+    <form id="registrationForm">
+      <div class="field">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" autocomplete="username"
+               required minlength="3" />
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password"
+               autocomplete="new-password" required minlength="6" />
+      </div>
+
+      <div class="field">
+        <label for="confirmPassword">Confirm password</label>
+        <input id="confirmPassword" name="confirmPassword" type="password"
+               autocomplete="new-password" required minlength="6" />
+      </div>
+
+      <div class="field">
+        <label for="hotelName">Name of hotel</label>
+        <input id="hotelName" name="hotel_name" type="text" required />
+      </div>
+
+      <div class="field">
+        <label for="hotelAddress">Hotel address</label>
+        <input id="hotelAddress" name="address" type="text"
+               autocomplete="street-address" required />
+      </div>
+
+      <div class="field">
+        <label for="phone">Phone number <span class="optional">(optional)</span></label>
+        <input id="phone" name="phone" type="tel" autocomplete="tel" />
+      </div>
+
+      <div class="field">
+        <label for="email">Email address <span class="optional">(optional)</span></label>
+        <input id="email" name="email" type="email" autocomplete="email" />
+      </div>
+
+      <button id="submitButton" type="submit">Register</button>
+      <p id="message" role="status" aria-live="polite"></p>
+    </form>
+  </main>
+
+  <script>
+    const form = document.getElementById("registrationForm");
+    const message = document.getElementById("message");
+    const submitButton = document.getElementById("submitButton");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      message.textContent = "";
+      message.classList.remove("success");
+
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+      const hotelName=data.hotelName
+
+      if (data.password !== data.confirmPassword) {
+        message.textContent = "The passwords do not match.";
+        return;
+      }
+
+      delete data.confirmPassword;
+      submitButton.disabled = true;
+
+      try {
+        const response = await fetch("/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || "Registration failed.");
+        }
+ 
+    const hotelName = document.getElementById("hotelName").value; localStorage.setItem("hotelName", hotelName);
+  message.classList.add("success");
+        message.textContent = "Registration successful. You can now log in.";
+        form.reset();
+      } catch (error) {
+        message.textContent = error.message || "Unable to register. Please try again.";
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+  </script>
+</body>
+          </html>
