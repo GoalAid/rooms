@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17324d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Hotel Room Manager">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/icon-192.svg">
+  <title>Hotel Room Management</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+  margin: 0;
+  color: #243042;
+  background: #f4f6f8;
+  font-family: Arial, sans-serif;
+  font-size: 15px;
+}
+
+header {
+  padding: 16px;
+  color: white;
+  background: #17324d;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+header p {
+  margin: 4px 0 0;
+  color: #c5d6e8;
+  font-size: 0.85rem;
+}
+
+main {
+  padding: 12px;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.summary-card,
+.panel,
+.room-card {
+  border: 1px solid #e2e7ef;
+  border-radius: 10px;
+  background: white;
+}
+
+.summary-card {
+  min-width: 0;
+  padding: 9px 6px;
+  text-align: center;
+}
+
+.summary-card span {
+  display: block;
+  color: #697586;
+  font-size: 0.68rem;
+  line-height: 1.15;
+}
+
+.summary-card strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.15rem;
+}
+
+.panel {
+  margin-bottom: 10px;
+  padding: 12px;
+}
+
+.panel h2,
+.section-heading h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.panel > h2 {
+  margin-bottom: 10px;
+}
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: end;
+  margin-bottom: 12px;
+  gap: 9px;
+}
+
+label {
+  display: grid;
+  gap: 5px;
+  font-size: 0.78rem;
+}
+
+input,
+select,
+button {
+  min-width: 0;
+  min-height: 42px;
+  padding: 8px 9px;
+  border: 1px solid #cbd3de;
+  border-radius: 7px;
+  font: inherit;
+  background: white;
+}
+
+button {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+form button {
+  grid-column: 1 / -1;
+}
+
+.primary {
+  color: white;
+  background: #2459a6;
+  border-color: #2459a6;
+}
+
+.danger {
+  color: white;
+  background: #b42318;
+  border-color: #b42318;
+}
+
+.secondary {
+  color: #243042;
+  background: white;
+}
+
+.room-tools {
+  display: flex;
+  gap: 6px;
+}
+
+.room-tools select {
+  flex: 1;
+}
+
+.room-tools button {
+  padding-inline: 8px;
+  font-size: 0.78rem;
+}
+
+.room-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.room-card {
+  padding: 10px;
+  border-left: 4px solid #cbd3de;
+}
+
+.room-card.selected {
+  outline: 2px solid #2459a6;
+  outline-offset: 1px;
+}
+
+.room-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.room-top h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #eef1f5;
+  font-size: 0.72rem;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.badge.available {
+  color: #176b3a;
+  background: #e7f6ec;
+}
+
+.badge.occupied {
+  color: #9a3412;
+  background: #fff0e8;
+}
+
+.badge.cleaning {
+  color: #725400;
+  background: #fff6d8;
+}
+
+.room-type,
+.guest,
+.stay {
+  margin: 5px 0 0;
+  color: #475467;
+  font-size: 0.82rem;
+}
+
+.room-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.room-actions button {
+  min-height: 36px;
+  padding: 6px 9px;
+  font-size: 0.8rem;
+}
+
+.counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: #475467;
+}
+
+.empty {
+  padding: 12px 0;
+  color: #667085;
+}
+
+@media (max-width: 360px) {
+  .summary-card {
+    padding-inline: 3px;
+  }
+
+  .summary-card span {
+    font-size: 0.62rem;
+  }
+
+  .room-tools button {
+    max-width: 105px;
+  }
+
+   .delete-selected {
+     padding: 0.35rem 0.6rem;
+     font-size: 0.85rem;
+  }
+
+  .backup-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 14px;
+}
+
+.backup-button {
+  padding: 9px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #475569;
+  color: #fff;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.backup-button:hover {
+  background: #334155;
+}
+
+.backup-button:focus-visible {
+  outline: 2px solid #64748b;
+  outline-offset: 2px;
+}
+
+     [hidden] {
+        display: none !important;
+     }
+    }
+  </style>
+</head>
+
+<body>
+<header>
+    <h1 id="hotel-name">Loading hotel name…</h1>
+    <p>Room management</p>
+  </header>
+
+<main>
+   <section class="summary" aria-label="Room summary">
+      <article class="summary-card"><span>Total rooms</span><strong id="totalCount">0</strong></article>
+      <article class="summary-card"><span>Available</span><strong id="availableCount">0</strong></article>
+      <article class="summary-card"><span>Occupied</span><strong id="occupiedCount">0</strong></article>
+      <article class="summary-card"><span>Needs cleaning</span><strong id="cleaningCount">0</strong></article>
+    </section>
+
+<div class="backup-actions" aria-label="Backup actions">
+  <button id="exportBackupButton" class="backup-button" type="button">
+    Export backup
+  </button>
+  <button id="importBackupButton" class="backup-button" type="button">
+    Import backup
+  </button>
+</div>
+
+<input
+  id="backupFileInput"
+  type="file"
+  accept=".json,application/json"
+  hidden
+>
+
+  <div class="section-heading">
+  <div style="padding-left: 8px;">
+  <h2 id="add-room-heading">Add a room</h2>
+  </div>
+
+  <button
+    id="toggleAddRoom"
+    class="secondary"
+    type="button"
+    aria-expanded="false"
+    aria-controls="addRoomForm"
+  >＋</button>
+</div>
+<form id="addRoomForm" hidden>
+  <!-- Keep your existing labels and submit button here -->
+          <label>
+          Room number
+          <input
+            id="roomNumber"
+            name="roomNumber"
+            placeholder="e.g. 104"
+            required
+            maxlength="10"
+          >
+        </label>
+
+        <label>
+          Room type
+          <select id="roomType" name="roomType">
+            <option>Single</option>
+            <option>Double</option>
+            <option>Twin</option>
+            <option>Suite</option>
+            <option>Family</option>
+          </select>
+        </label>
+
+        <button class="primary" type="submit">Add room</button>
+</form>
+
+    <section class="panel">
+      <div class="section-heading">
+        <h2>Rooms</h2>
+
+        <div class="room-tools">
+          <select id="filter" aria-label="Filter rooms">
+            <option value="all">All rooms</option>
+            <option value="available">Available</option>
+            <option value="occupied">Occupied</option>
+            <option value="cleaning">Needs cleaning</option>
+          </select>
+
+          <button
+            id="deleteRoomButton"
+            class="danger delete-selected"
+            type="button"
+            disabled
+          >
+            Delete selected
+          </button>
+        </div>
+      </div>
+
+      <div class="room-list" id="roomList"></div>
+    </section>
+  </main>
+
+  <script>
+  const toggleAddRoom = document.getElementById("toggleAddRoom");
+  const addRoomForm = document.getElementById("addRoomForm");
+ toggleAddRoom.addEventListener("click", () => {
+    const isOpen = !addRoomForm.hidden;
+    addRoomForm.hidden = isOpen;
+    toggleAddRoom.setAttribute("aria-expanded", String(!isOpen));
+    toggleAddRoom.textContent = isOpen ? "＋" : "−";
+  });
+
+    const STORAGE_KEY = "hotelRooms";
+
+    const defaultRooms = [
+      {
+        number: "101",
+        type: "Single",
+        status: "available",
+        guest: "",
+        checkoutDate: ""
+      },
+      {
+        number: "102",
+        type: "Double",
+        status: "occupied",
+        guest: "Jordan Lee",
+        checkoutDate: ""
+      },
+      {
+        number: "103",
+        type: "Suite",
+        status: "cleaning",
+        guest: "",
+        checkoutDate: ""
+      },
+      {
+        number: "201",
+        type: "Double",
+        status: "available",
+        guest: "",
+        checkoutDate: ""
+      }
+    ];
+
+    function loadRooms() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        return saved ? JSON.parse(saved) : defaultRooms;
+      } catch {
+        return defaultRooms;
+      }
+    }
+
+    let rooms = loadRooms();
+    let selectedRoomNumber = null;
+
+    const roomList = document.getElementById("roomList");
+    const filter = document.getElementById("filter");
+    const deleteRoomButton = document.getElementById("deleteRoomButton");
+
+    function saveRooms() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(rooms));
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[char]);
+    }
+
+    function getDaysRemaining(checkoutDate) {
+      if (!checkoutDate) return null;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const checkout = new Date(`${checkoutDate}T00:00:00`);
+      if (Number.isNaN(checkout.getTime())) return null;
+
+      const millisecondsPerDay = 24 * 60 * 60 * 1000;
+      return Math.max(
+        0,
+        Math.ceil((checkout.getTime() - today.getTime()) / millisecondsPerDay)
+      );
+    }
+
+    function render() {
+      const selectedFilter = filter.value;
+
+      const visibleRooms = rooms
+        .filter(room =>
+          selectedFilter === "all" || room.status === selectedFilter
+        )
+        .sort((a, b) =>
+          String(a.number).localeCompare(String(b.number), undefined, {
+            numeric: true
+          })
+        );
+  document.getElementById("totalCount").textContent = rooms.length;
+      document.getElementById("availableCount").textContent =
+        rooms.filter(room => room.status === "available").length;
+      document.getElementById("occupiedCount").textContent =
+        rooms.filter(room => room.status === "occupied").length;
+      document.getElementById("cleaningCount").textContent =
+        rooms.filter(room => room.status === "cleaning").length;
+
+      if (visibleRooms.length === 0) {
+        roomList.innerHTML =
+          '<div class="empty">No rooms match this filter.</div>';
+        updateDeleteButton();
+        return;
+      }
+
+      roomList.innerHTML = visibleRooms.map(room => {
+        let action = "";
+
+        if (room.status === "available") {
+          action = `
+            <button class="primary" data-action="checkin"
+              data-room="${escapeHtml(room.number)}">
+              Check in
+            </button>
+          `;
+        } else if (room.status === "occupied") {
+          action = `
+            <button class="danger" data-action="checkout"
+              data-room="${escapeHtml(room.number)}">
+              Check out
+            </button>
+          `;
+        } else {
+          action = `
+            <button class="primary" data-action="clean"
+              data-room="${escapeHtml(room.number)}">
+              Mark clean
+            </button>
+          `;
+        }
+
+        let stayInfo = "";
+        if (room.status === "occupied" && room.checkoutDate) {
+          const days = getDaysRemaining(room.checkoutDate);
+          stayInfo = days === null
+            ? ""
+            : `<p class="stay">${days} day${days === 1 ? "" : "s"} remaining
+               (checkout: ${escapeHtml(room.checkoutDate)})</p>`;
+        }
+
+        return `
+          <article
+            class="room-card ${String(room.number) === String(selectedRoomNumber) ? "selected" : ""}"
+            data-room="${escapeHtml(room.number)}"
+          >
+            <div class="room-top">
+              <h3>Room ${escapeHtml(room.number)}</h3>
+              <span class="badge ${escapeHtml(room.status)}">
+                ${escapeHtml(room.status)}
+              </span>
+            </div>
+
+            <p class="room-type">${escapeHtml(room.type)} room</p>
+            <p class="guest">
+              ${room.guest
+                ? `Guest: ${escapeHtml(room.guest)}`
+                : "No guest assigned"}
+            </p>
+            ${stayInfo}
+
+            <div class="room-actions">${action}</div>
+          </article>
+        `;
+      }).join("");
+
+      updateDeleteButton();
+    }
+
+    function updateDeleteButton() {
+      const selectedRoom = rooms.find(
+        room => String(room.number) === String(selectedRoomNumber)
+      );
+
+      deleteRoomButton.disabled =
+        !selectedRoom || selectedRoom.status === "occupied";
+    }
+    document.getElementById("addRoomForm").addEventListener("submit", event => {
+      event.preventDefault();
+
+      const numberInput = document.getElementById("roomNumber");
+      const typeInput = document.getElementById("roomType");
+      const number = numberInput.value.trim();
+
+      if (!number) {
+        alert("Enter a room number.");
+        return;
+      }
+
+      if (rooms.some(
+        room => String(room.number).toLowerCase() === number.toLowerCase()
+      )) {
+        alert("That room number already exists.");
+        numberInput.focus();
+        return;
+      }
+
+      rooms.push({
+        number,
+        type: typeInput.value,
+        status: "available",
+        guest: "",
+        checkoutDate: ""
+      });
+
+      saveRooms();
+      event.target.reset();
+      filter.value = "all";
+      selectedRoomNumber = null;
+      render();
+    });
+
+    roomList.addEventListener("click", event => {
+      const actionButton = event.target.closest("button[data-action]");
+
+      if (actionButton) {
+        const room = rooms.find(
+          item => String(item.number) === actionButton.dataset.room
+        );
+        if (!room) return;
+
+        const action = actionButton.dataset.action;
+
+        if (action === "checkin") {
+          const guest = prompt("Enter the guest's name:");
+          if (!guest || !guest.trim()) return;
+
+          const checkoutDate = prompt(
+            "Enter the checkout date (YYYY-MM-DD):"
+          );
+          if (!checkoutDate) return;
+
+          const parsedDate = new Date(`${checkoutDate}T00:00:00`);
+          if (
+            Number.isNaN(parsedDate.getTime()) ||
+            !/^\d{4}-\d{2}-\d{2}$/.test(checkoutDate)
+          ) {
+            alert("Enter a valid date in YYYY-MM-DD format.");
+            return;
+          }
+
+          room.guest = guest.trim();
+          room.checkoutDate = checkoutDate;
+          room.status = "occupied";
+        } else if (action=== "checkout") {
+          room.guest = "";
+          room.checkoutDate = "";
+          room.status = "cleaning";
+        } else if (action === "clean") {
+          room.status = "available";
+        }
+
+        saveRooms();
+        render();
+        return;
+      }
+
+      const card = event.target.closest(".room-card");
+if (!card) return;
+
+const clickedRoomNumber = card.dataset.room;
+
+selectedRoomNumber =
+  String(selectedRoomNumber) === String(clickedRoomNumber)
+    ? null
+    : clickedRoomNumber;
+     render();
+});
+
+deleteRoomButton.addEventListener("click", () => {
+  const room = rooms.find(
+    item => String(item.number) === String(selectedRoomNumber)
+  );
+
+  if (room) {
+    deleteRoom(room);
+  }
+});
+
+   function deleteRoom(room) {
+  if (room.status === "occupied") {
+    alert(`Room ${room.number} is occupied and cannot be deleted.`);
+    return;
+  }
+
+  if (!confirm(`Delete room ${room.number}? This can’t be undone.`)) {
+    return;
+  }
+
+  rooms = rooms.filter(
+    item => String(item.number) !== String(room.number)
+  );
+
+  if (String(selectedRoomNumber) === String(room.number)) {
+    selectedRoomNumber = null;
+  }
+
+  saveRooms();
+  render();
+}
+   
+ filter.addEventListener("change", render);
+
+    render();
+
+    if ("serviceWorker" in navigator) {
+ 
+window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js")
+      .catch(error => console.error("Service worker registration failed:", error));
+  });
+	  }
+
+document.getElementById("exportBackupButton").addEventListener("click", () => {
+    const backup = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    rooms
+  };
+
+    const blob = new Blob(
+    [JSON.stringify(backup, null, 2)],
+    { type: "application/json" }
+  );
+
+    const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `hotel-rooms-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+});
+
+    const backupFileInput = document.getElementById("backupFileInput");
+
+document.getElementById("importBackupButton").addEventListener("click", () => {
+  backupFileInput.click();
+});
+
+backupFileInput.addEventListener("change", async () => {
+  const file = backupFileInput.files[0];
+  if (!file) return;
+
+  try {
+    const backup = JSON.parse(await file.text());
+    const importedRooms = Array.isArray(backup) ? backup : backup.rooms;
+
+    if (
+      !Array.isArray(importedRooms) ||
+      !importedRooms.every(room =>
+        room &&
+        room.number != null &&
+        typeof room.type === "string" &&
+        ["available", "occupied", "cleaning"].includes(room.status)
+      )
+    ) {
+      throw new Error("The file does not contain valid room data.");
+    }
+
+    if (!confirm("Importing will replace the current room list. Continue?")) {
+      return;
+    }
+
+    rooms = importedRooms;
+    selectedRoomNumber = null;
+    saveRooms();
+    render();
+    alert("Room data imported successfully.");
+  } catch (error) {
+    alert(`Could not import this backup: ${error.message}`);
+  } finally {
+    backupFileInput.value = "";
+  }
+});
+
+   const heading = document.getElementById("hotel-name");
+   const hotelName = localStorage.getItem("hotelName");
+
+if (hotelName) {
+    heading.textContent = hotelName;
+} else {
+  // Show the registration/login screen or a helpful message.
+    heading.textContent = "Could not load hotel";
+}
+  </script>
+</body>
+</html>
