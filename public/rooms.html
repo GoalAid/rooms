@@ -46,37 +46,21 @@ main {
 }
 
 .summary {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-  margin-bottom: 10px;
-}
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;   
+      margin: 0 10px 0 10px;  
+      color: #435160;
+      font-size: 0.85rem;
+    }
 
-.summary-card,
+    .summary strong { color: #17212b; }
+
 .panel,
 .room-card {
   border: 1px solid #e2e7ef;
   border-radius: 10px;
   background: white;
-}
-
-.summary-card {
-  min-width: 0;
-  padding: 9px 6px;
-  text-align: center;
-}
-
-.summary-card span {
-  display: block;
-  color: #697586;
-  font-size: 0.68rem;
-  line-height: 1.15;
-}
-
-.summary-card strong {
-  display: block;
-  margin-top: 4px;
-  font-size: 1.15rem;
 }
 
 .panel {
@@ -180,8 +164,7 @@ form button {
 }
 
 .room-card {
-  padding: 10px;
-  border-left: 4px solid #cbd3de;
+  padding: 5px; 
 }
 
 .room-card.selected {
@@ -194,13 +177,17 @@ form button {
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-}
-
+} 
+.room-name {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;      
+    }
 .room-top h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.1rem;
 }
-
+   
 .badge {
   padding: 4px 8px;
   border-radius: 999px;
@@ -318,12 +305,14 @@ form button {
   </header>
 
 <main>
-   <section class="summary" aria-label="Room summary">
-      <article class="summary-card"><span>Total rooms</span><strong id="totalCount">0</strong></article>
-      <article class="summary-card"><span>Available</span><strong id="availableCount">0</strong></article>
-      <article class="summary-card"><span>Occupied</span><strong id="occupiedCount">0</strong></article>
-      <article class="summary-card"><span>Needs cleaning</span><strong id="cleaningCount">0</strong></article>
-    </section>
+   <div class="summary" aria-label="Room summary">
+      <span>Total rooms: <strong id="totalCount">0</strong></span>
+      <span>Occupied: <strong id="occupiedCount">0</strong></span>
+      <span>Available: <strong id="availableCount">0</strong></span>
+      <span>Cleaning: <strong id="cleaningCount">0</strong></span>  
+     <span>Out of service: <strong id="ofsCount">0</strong></span> 
+    </div>
+
 
 <div class="backup-actions" aria-label="Backup actions">
   <button id="exportBackupButton" class="backup-button" type="button">
@@ -565,17 +554,19 @@ form button {
             data-room="${escapeHtml(room.number)}"
           >
             <div class="room-top">
-              <h3>Room ${escapeHtml(room.number)}</h3>
+            <div class="room-name">  <h3>${escapeHtml(room.number)}</h3>
+        <p class="room-type"> ${escapeHtml(room.type)}</p> 
+           </div>
               <span class="badge ${escapeHtml(room.status)}">
                 ${escapeHtml(room.status)}
               </span>
             </div>
 
-            <p class="room-type">${escapeHtml(room.type)} room</p>
+         
             <p class="guest">
               ${room.guest
                 ? `Guest: ${escapeHtml(room.guest)}`
-                : "No guest assigned"}
+                : ""}
             </p>
             ${stayInfo}
 
