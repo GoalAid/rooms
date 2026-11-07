@@ -182,6 +182,7 @@
 
      usernameElement.textContent = `Username: ${data.username || "Not provided"}`;
       hotelElement.textContent = `${data.hotelName || "Not provided"}`;
+      localStorage.setItem("hotelName", data.hotelName);
 
       const expiry = new Date(data.expiresAt);
 
@@ -213,4 +214,4 @@
   loadDashboard();
 </script>
 </body>
-  </html>
+</html>
