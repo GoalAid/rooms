@@ -151,50 +151,51 @@
   </main>
 
   <script>
-    const form = document.getElementById("registrationForm");
-    const message = document.getElementById("message");
-    const submitButton = document.getElementById("submitButton");
+  const form = document.getElementById("registrationForm");
+  const message = document.getElementById("message");
+  const submitButton = document.getElementById("submitButton");
 
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      message.textContent = "";
-      message.classList.remove("success");
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    message.textContent = "";
+    message.classList.remove("success");
 
-      const formData = new FormData(form);
-      const data = Object.fromEntries(formData.entries());
-      const hotelName=data.hotelName
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    const hotelName = String(data.hotel_name || "").trim();
 
-      if (data.password !== data.confirmPassword) {
-        message.textContent = "The passwords do not match.";
-        return;
+    if (data.password !== data.confirmPassword) {
+      message.textContent = "The passwords do not match.";
+      return;
+    }
+
+    delete data.confirmPassword;
+    submitButton.disabled = true;
+
+    try {
+      const response = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Registration failed.");
       }
 
-      delete data.confirmPassword;
-      submitButton.disabled = true;
-
-      try {
-        const response = await fetch("/api/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data)
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.error || "Registration failed.");
-        }
- 
-    const hotelName = document.getElementById("hotelName").value; localStorage.setItem("hotelName", hotelName);
-  message.classList.add("success");
-        message.textContent = "Registration successful. You can now log in.";
-        form.reset();
-      } catch (error) {
-        message.textContent = error.message || "Unable to register. Please try again.";
-      } finally {
-        submitButton.disabled = false;
-      }
-    });
-  </script>
+      localStorage.setItem("hotelName", hotelName);
+      message.classList.add("success");
+      message.textContent = "Registration successful. You can now log in.";
+      form.reset();
+    } catch (error) {
+      message.textContent =
+        error.message || "Unable to register. Please try again.";
+    } finally {
+      submitButton.disabled = false;
+    }
+  });
+</script>
 </body>
-          </html>
+</html>
