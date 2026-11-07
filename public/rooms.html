@@ -793,6 +793,7 @@ backupFileInput.addEventListener("change", async () => {
   }
 });
 
+   document.addEventListener("DOMContentLoaded", () => {
    const heading = document.getElementById("hotel-name");
    const hotelName = localStorage.getItem("hotelName");
 
@@ -802,6 +803,7 @@ if (hotelName) {
   // Show the registration/login screen or a helpful message.
     heading.textContent = "Could not load hotel";
 }
-  </script>
+});
+</script>
 </body>
 </html>
