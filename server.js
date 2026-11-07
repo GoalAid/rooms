@@ -222,42 +222,49 @@ app.post("/api/login", async (req, res) => {
 });
 
 // Protected dashboard API.
-app.get("/api/hotel/dashboard", requireLogin, (req, res) => {
-   if (!req.auth?.userId) {
-    return res.status(401).json({ error: "Authentication required." });
-  }
+app.get("/api/hotel/dashboard", requireLogin, async (req, res) => {
+  try {
+    if (!req.auth?.userId) {
+      return res.status(401).json({ error: "Authentication required." });
+    }
 
-   const user = getUser(req.auth.userId);
+    const user = await getUser(req.auth.userId);
 
-   if (!user) {
-    return res.status(401).json({ error: "User not found." });
-  }
+    if (!user) {
+      return res.status(401).json({ error: "User not found." });
+    }
 
-  const now = Date.now();
-  const subscriptionExpiry = Date.parse(user.subscription_ends_at || "");
-  const trialExpiry = Date.parse(user.trial_ends_at || "");
+    const now = Date.now();
+    const subscriptionExpiry = Date.parse(user.subscription_ends_at || "");
+    const trialExpiry = Date.parse(user.trial_ends_at || "");
 
-  const paidActive =
-    Number.isFinite(subscriptionExpiry) && subscriptionExpiry > now;
-  const trialActive =
-    Number.isFinite(trialExpiry) && trialExpiry > now;
+    const paidActive =
+      Number.isFinite(subscriptionExpiry) && subscriptionExpiry > now;
+    const trialActive =
+      Number.isFinite(trialExpiry) && trialExpiry > now;
 
-  if (!paidActive && !trialActive) {
-    return res.status(403).json({
-      error: "Your trial or subscription has expired.",
+    if (!paidActive && !trialActive) {
+      return res.status(403).json({
+        error: "Your trial or subscription has expired.",
+        trialEndsAt: user.trial_ends_at,
+        subscriptionEndsAt: user.subscription_ends_at,
+      });
+    }
+
+    return res.json({
+      username: user.username,
+      hotelName: user.hotel_name,
+      status: paidActive ? "Active" : "Trial",
+      expiresAt: paidActive
+        ? user.subscription_ends_at
+        : user.trial_ends_at,
+      trialEndsAt: user.trial_ends_at,
     });
+  } catch (error) {
+    console.error("Dashboard error:", error);
+    return res.status(500).json({ error: "Could not load dashboard." });
   }
-
-  return res.json({
-    username: user.username,
-    hotelName: user.hotel_name,
-    status: paidActive ? "Active" : "Trial",
-    expiresAt: paidActive
-      ? user.subscription_ends_at
-      : user.trial_ends_at,
-  });
 });
-
 
 function getAccountStatus(user) {
   const now = Date.now();
