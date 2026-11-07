@@ -8,6 +8,7 @@
     body { font: 16px system-ui, sans-serif; max-width: 480px; margin: 3rem auto; padding: 0 1rem; }
     input, button { box-sizing: border-box; width: 100%; padding: .7rem; margin: .4rem 0; }
     pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .message{ color: red}
   </style>
 </head>
 <body>
@@ -18,7 +19,7 @@
     <button type="submit">Log in</button>
   </form>
   <p><a class="button" href="/register.html">Create an account</a></p>
-  <pre id="result" aria-live="polite"></pre>
+  <pre class="message" id="result" aria-live="polite"></pre>
 
   <script>
     let token = "";
