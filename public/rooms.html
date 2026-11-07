@@ -554,9 +554,10 @@ form button {
             data-room="${escapeHtml(room.number)}"
           >
             <div class="room-top">
-            <div class="room-name">  <h3>${escapeHtml(room.number)}</h3>
-        <p class="room-type"> ${escapeHtml(room.type)}</p> 
-           </div>
+            <div class="room-name">  
+			  <h3>${escapeHtml(room.number)}</h3>
+              <p class="room-type"> ${escapeHtml(room.type)}</p> 
+            </div>
               <span class="badge ${escapeHtml(room.status)}">
                 ${escapeHtml(room.status)}
               </span>
