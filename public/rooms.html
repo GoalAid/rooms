@@ -811,6 +811,7 @@ deleteRoomButton.addEventListener("click", () => {
   if (!room || !["available", "cleaning"].includes(room.status)) return;
 
   room.status = "out-of-service";
+  selectedRoomNumber = null;
   saveRooms();
   render();
 }
