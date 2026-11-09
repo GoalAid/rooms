@@ -261,15 +261,21 @@ form button {
   justify-content: center;
   align-items: center;
   gap: 10px;
-  margin: 12px 0 14px;
+  margin-top: 12px;
+}
+
+.backup-options {
+display: flex;
+justify-content: center;
+gap: 16px; /* Increase or decrease as needed */
 }
 
 .backup-button {
   padding: 9px 16px;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
-  background: #475569;
-  color: #fff;
+  background: transparent; 
+  color: #435160;
   font: inherit;
   font-weight: 500;
   cursor: pointer;
@@ -363,15 +369,20 @@ form button {
      <span>Out of service: <strong id="ofsCount">0</strong></span> 
     </div>
 
+<details class="backup-actions">
+  <summary class="backup-prompt" aria-label="Backup actions">
+    Backup
+  </summary>
 
-<div class="backup-actions" aria-label="Backup actions">
-  <button id="exportBackupButton" class="backup-button" type="button">
-    Export backup
-  </button>
-  <button id="importBackupButton" class="backup-button" type="button">
-    Import backup
-  </button>
-</div>
+  <div class="backup-options" align="center">
+    <button id="exportBackupButton" class="backup-button" type="button">
+      Export
+    </button>
+    <button id="importBackupButton" class="backup-button" type="button">
+      Import
+    </button>
+  </div>
+</details>
 
 <input
   id="backupFileInput"
