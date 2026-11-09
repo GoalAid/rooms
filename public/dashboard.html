@@ -144,11 +144,13 @@
           </article>
         </div>
       </div>
+</section>
+
 <p><a id="rooms-link" href="/rooms.html" hidden>
     Open hotel room management
   </a>
 </p>
-</section>
+</main>
 
 <script>
   async function loadDashboard() {
@@ -158,11 +160,12 @@
     const expiryElement = document.getElementById("account-expiry");
     const messageElement = document.getElementById("account-message");
     const plansView = document.getElementById("plansView");
-    const token = localStorage.getItem("token");
     const roomsLink = document.getElementById("rooms-link");
+    const token = localStorage.getItem("token");
 
     if (!token) {
       statusElement.textContent = "Please log in to view your account.";
+      roomsLink.hidden = true;
       return;
     }
 
@@ -172,42 +175,44 @@
       });
 
       const data = await response.json();
-     
+
       if (!response.ok) {
-        statusElement.textContent =
-          data.error || "Unable to load account status.";
-        plansView.hidden = false;
-        return;
+        throw new Error(data.error || `Request failed (${response.status})`);
       }
 
-     usernameElement.textContent = `Username: ${data.username || "Not provided"}`;
-      hotelElement.textContent = `${data.hotelName || "Not provided"}`;
-      localStorage.setItem("hotelName", data.hotelName);
-
-      const expiry = new Date(data.expiresAt);
-
-      if (Number.isNaN(expiry.getTime())) {
-        statusElement.textContent = "Account expiry date is unavailable.";
-        return;
-      }
+      usernameElement.textContent =
+        `Username: ${data.username || "Not provided"}`;
+      hotelElement.textContent = data.hotelName || "Not provided";
 
       const paid = data.status === "Active";
-      statusElement.textContent = paid ? "Paid plan active" : "7-day trial active";
+      const trialValid =
+        data.trialEndsAt &&
+        new Date(data.trialEndsAt).getTime() > Date.now();
 
-      roomsLink.hidden = false;
+      // Show the room link to active paid users or users with a valid trial.
+      roomsLink.hidden = !(paid || trialValid);
+      plansView.hidden = paid;
 
-      expiryElement.textContent =
-        `Expires: ${expiry.toLocaleDateString().replaceAll('/', '-')}`;
+      statusElement.textContent = paid
+        ? "Paid plan active"
+        : trialValid
+          ? "7-day trial active"
+          : "Trial expired";
+
+      const expiry = new Date(data.expiresAt);
+      expiryElement.textContent = Number.isNaN(expiry.getTime())
+        ? "Expiry date unavailable."
+        : `Expires: ${expiry.toLocaleDateString()}`;
 
       messageElement.textContent = paid
         ? "Your subscription is active."
-        : "(* You can choose a plan at any time during your trial.)";
-
-      // Show plan options for trial users, but not paid subscribers.
-      plansView.hidden = paid;
-    } catch (error) {
-      console.error(error);
-      statusElement.textContent = "Could not load account status.";
+        : trialValid
+          ? "(* You can choose a plan at any time during your trial.)"
+          : "Your trial has expired. Choose a plan to continue.";     
+        } catch (error) {
+      console.error("Dashboard loading failed:", error);
+      statusElement.textContent = `Could not load account status: ${error.message}`;
+      roomsLink.hidden = true;
     }
   }
 
