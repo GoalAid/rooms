@@ -14,24 +14,30 @@ const publicDir = path.join(__dirname, "public");
 app.use(express.json());
 app.use(express.static(publicDir));
 
-const JWT_SECRET = process.env.JWT_SECRET;
-
-if (!JWT_SECRET) {
-  throw new Error("Set JWT_SECRET in your .env file");
-}
-
 const { Pool } = require('pg');
 const fs = require('fs');
+let pool;
+let initialization;
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    ca: fs.readFileSync(require('node:path').join(__dirname, 'ca.pem'), 'utf8'),
-    rejectUnauthorized: true,
-  },
-});
+function getPool() {
+  if (!pool) {
+    if (!process.env.DATABASE_URL) throw new Error('Missing database configuration');
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      connectionTimeoutMillis: 4000,
+      query_timeout: 8000,
+      ssl: { ca: fs.readFileSync(path.join(__dirname, 'ca.pem'), 'utf8'), rejectUnauthorized: true },
+    });
+    pool.on('error', logDatabaseError);
+  }
+  return pool;
+}
 
-async function createTables() {
+function logDatabaseError(error) {
+  console.error('Database unavailable:', error.code || error.name);
+}
+
+async function createTables(pool) {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -60,10 +66,44 @@ async function createTables() {
 `);
 }
 
-createTables().catch((error) => {
-  console.error('Database initialization failed:', error);
-  process.exit(1);
-});
+class DatabaseUnavailable extends Error {}
+
+async function query(text, values) {
+  try {
+    if (!initialization) {
+      initialization = createTables(getPool()).catch(error => {
+        initialization = undefined;
+        throw new DatabaseUnavailable('Database setup failed', { cause: error });
+      });
+    }
+    await initialization;
+    return await pool.query(text, values);
+  } catch (error) {
+    if (error instanceof DatabaseUnavailable || !pool || /^(08|53|57P0|28|E|CERT_|DEPTH_|SELF_SIGNED)/.test(error.code || '') || /connection|query read timeout|connect timeout/i.test(error.message)) {
+      logDatabaseError(error.cause || error);
+      throw new DatabaseUnavailable();
+    }
+    throw error;
+  }
+}
+
+function unavailable(res) {
+  return res.set('Cache-Control', 'no-store').set('Retry-After', '5').status(503).json({ error: '服务暂时不可用，请稍后重试。' });
+}
+
+if (process.env.VERCEL_ENV === 'preview' || require.main === module) {
+  app.get('/api/health/database', async (_req, res) => {
+    try {
+      await getPool().query('SELECT 1');
+      res.set('Cache-Control', 'no-store').json({ ok: true });
+    } catch (error) {
+      logDatabaseError(error);
+      unavailable(res);
+    }
+  });
+}
+
+app.use('/api', (_req, res, next) => process.env.JWT_SECRET ? next() : unavailable(res));
 
 function addDays(date, days) {
   const result = new Date(date);
@@ -102,7 +142,7 @@ function requireLogin(req, res, next) {
 }
 
 async function getUser(userId) {
-  const result = await pool.query(
+  const result = await query(
     'SELECT * FROM users WHERE id = $1',
     [userId]
   );
@@ -152,7 +192,7 @@ app.post("/api/register", async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 12);
     const trialEndsAt = addDays(new Date(), 7).toISOString();
 
-    const result = await pool.query(
+    const result = await query(
   `INSERT INTO users
      (username, password_hash, hotel_name, address, email, phone, trial_ends_at)
    VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -176,6 +216,7 @@ app.post("/api/register", async (req, res) => {
       trialEndsAt: user.trial_ends_at,
     });
   } catch (error) {
+    if (error instanceof DatabaseUnavailable) return unavailable(res);
     if (String(error).includes("UNIQUE")) {
       return res.status(409).json({ error: "用户名已被注册" });
     }
@@ -194,7 +235,7 @@ app.post("/api/login", async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
+    const result = await query(
       "SELECT * FROM users WHERE username = $1",
       [username.trim()]
     );
@@ -209,6 +250,7 @@ app.post("/api/login", async (req, res) => {
       username: user.username,
     });
   } catch (error) {
+    if (error instanceof DatabaseUnavailable) return unavailable(res);
     console.error("Login failed:", error);
     return res.status(500).json({ error: "Login failed." });
   }
@@ -234,6 +276,7 @@ app.get("/api/subscription/status", requireLogin, async (req, res) => {
       subscriptionEndsAt: user.subscription_ends_at
     });
   } catch (error) {
+    if (error instanceof DatabaseUnavailable) return unavailable(res);
     console.error("Subscription status error:", error);
     res.status(500).json({ error: "Could not verify subscription." });
   }
@@ -275,6 +318,7 @@ app.get("/api/subscription/status", requireLogin, async (req, res) => {
         : user.trial_ends_at,
     });
   } catch (error) {
+    if (error instanceof DatabaseUnavailable) return unavailable(res);
     console.error("Dashboard API error:", error);
     return res.status(500).json({ error: "Could not load account status." });
   }
