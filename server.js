@@ -24,7 +24,7 @@ const fs = require('fs');
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    ca: fs.readFileSync('./ca.pem', 'utf8'),
+    ca: fs.readFileSync(require('node:path').join(__dirname, 'ca.pem'), 'utf8'),
     rejectUnauthorized: true,
   },
 });
