@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head> 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#17324d">
@@ -9,13 +9,14 @@
   <meta name="apple-mobile-web-app-title" content="Hotel Room Manager">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./icons/icon-192.svg">
-  <title>Hotel Room Management</title>
+  <title>客房管理</title>
 
   <style>
+     html { visibility: hidden; }
     * {
       box-sizing: border-box;
     }
-    
+
     body {
   margin: 0;
   color: #243042;
@@ -197,17 +198,17 @@ form button {
   white-space: nowrap;
 }
 
-.badge.available {
+.badge.可用 {
   color: #176b3a;
   background: #e7f6ec;
 }
 
-.badge.occupied {
+.badge.使用中 {
   color: #9a3412;
   background: #fff0e8;
 }
 
-.badge.cleaning {
+.badge.待打扫 {
   color: #725400;
   background: #fff6d8;
 }
@@ -256,18 +257,21 @@ form button {
      font-size: 0.85rem;
   }
 
-  .backup-actions {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  margin-top: 12px;
+.backup-actions {
+display: block;
+margin-top: 12px;
+width: 100%;
+}
+
+.backup-prompt {
+text-align: left;
+cursor: pointer;
 }
 
 .backup-options {
 display: flex;
 justify-content: center;
-gap: 16px; /* Increase or decrease as needed */
+gap: 16px;
 }
 
 .backup-button {
@@ -351,37 +355,110 @@ gap: 16px; /* Increase or decrease as needed */
         display: none !important;
      }
     }
+
+ #expiry-reminder {
+    width: min(90vw, 420px);
+    padding: 1.5rem;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgb(0 0 0 / 25%);  
+  }
+
+  #expiry-reminder-message {
+    font-size: 1.25rem;
+    line-height: 1.5;
+    margin: 0 0 1.5rem;
+  }
+
+  #expiry-reminder button {
+    padding: 0.6rem 1rem;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  /* Align both buttons to the right and increase the space between them. */
+  #expiry-reminder {
+    text-align: left;
+  }
+
+  #expiry-reminder button + button {
+    margin-left: 1rem;
+  }
+
+  #expiry-reminder #dismiss-reminders {
+    background-color: #007bff;
+    color: white;
+  }
+
+  #expiry-reminder::backdrop {
+    background: rgb(0 0 0 / 45%);
+  }
+
+  .reminder-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
   </style>
+<script>
+    (async() => {
+      const expiry = localStorage.getItem("expiry");
+      const expiryTime = expiry ? Date.parse(expiry) : NaN;     
+
+      if (!Number.isFinite(expiryTime) || Date.now() >= expiryTime) {
+        if (!navigator.onLine) {
+          alert("请联网重试");
+          window.close(); // May not work for an installed PWA.
+          return;
+        }
+
+        const goToLogin = confirm(
+          "您的订阅已过期，请登录继续操作"
+        );
+
+        if (goToLogin) {
+          window.location.replace("login.html");
+        } else {
+          window.close(); // Browsers often prevent scripts closing app windows.
+        }
+
+        return;
+      }
+
+      // Entitlement is valid; allow the page to render.
+      document.documentElement.style.visibility = "visible";
+    })();
+  </script>
 </head>
 
 <body>
 <header>
-    <h1 id="hotel-name">Loading hotel name…</h1>
-    <p>Room management</p>
+    <h1 id="hotel-name">加载旅馆名称…</h1>
+    <p>客房管理</p>
   </header>
 
 <main>
    <div class="summary" aria-label="Room summary">
-      <span>Total rooms: <strong id="totalCount">0</strong></span>
-      <span>Occupied: <strong id="occupiedCount">0</strong></span>
-      <span>Available: <strong id="availableCount">0</strong></span>
-      <span>Cleaning: <strong id="cleaningCount">0</strong></span>  
-     <span>Out of service: <strong id="ofsCount">0</strong></span> 
+      <span>总房间数: <strong id="totalCount">0</strong></span>
+      <span>使用中: <strong id="occupiedCount">0</strong></span>
+      <span>可用: <strong id="availableCount">0</strong></span>
+      <span>待打扫: <strong id="cleaningCount">0</strong></span>  
+     <span>不可用: <strong id="ofsCount">0</strong></span> 
     </div>
 
 <details class="backup-actions">
-  <summary class="backup-prompt" aria-label="Backup actions">
-    Backup
-  </summary>
+   <summary class="backup-prompt">备份</summary>
 
-  <div class="backup-options" align="center">
+  <div class="backup-options">
     <button id="exportBackupButton" class="backup-button" type="button">
-      Export
+      导出
     </button>
     <button id="importBackupButton" class="backup-button" type="button">
-      Import
+      导入
     </button>
   </div>
+<div><p>* 若导入时浏览器没反应，可刷新重试。</p></div>
 </details>
 
 <input
@@ -393,7 +470,7 @@ gap: 16px; /* Increase or decrease as needed */
 
   <div class="section-heading">
   <div style="padding-left: 8px;">
-  <h2 id="add-room-heading">Add a room</h2>
+  <h2 id="add-room-heading">添加房间</h2>
   </div>
 
   <button
@@ -407,7 +484,7 @@ gap: 16px; /* Increase or decrease as needed */
 <form id="addRoomForm" hidden>
   <!-- Keep your existing labels and submit button here -->
           <label>
-          Room number
+          房间号
           <input
             id="roomNumber"
             name="roomNumber"
@@ -418,30 +495,30 @@ gap: 16px; /* Increase or decrease as needed */
         </label>
 
         <label>
-          Room type
+          房间类型
           <select id="roomType" name="roomType">
-            <option>Single</option>
-            <option>Double</option>
-            <option>Twin</option>
-            <option>Suite</option>
-            <option>Family</option>
+            <option>单人房</option>
+            <option>大床房</option>
+            <option>标准房</option>
+            <option>套房</option>
+            <option>床位</option>
           </select>
         </label>
 
-        <button class="primary" type="submit">Add room</button>
+        <button class="primary" type="submit">添加</button>
 </form>
 
     <section class="panel">
       <div class="section-heading">
-        <h2>Rooms</h2>
+        <h2>房间</h2>
 
         <div class="room-tools">
           <select id="filter" aria-label="Filter rooms">
-            <option value="all">All rooms</option>
-            <option value="available">Available</option>
-            <option value="occupied">Occupied</option>
-            <option value="cleaning">Needs cleaning</option>
-            <option value="out-of-service">Out of service</option>
+            <option value="all">所有房间</option>
+            <option value="可用">✅ 可用</option>
+            <option value="使用中">🔆使用中</option>
+            <option value="待打扫">⚠️待打扫</option>
+            <option value="不可用">🚫不可用</option>
           </select>
 
           <div class="room-actions">
@@ -460,10 +537,10 @@ gap: 16px; /* Increase or decrease as needed */
 
     <div id="roomActionsMenu" class="room-actions-menu" hidden>
       <button id="deleteRoomButton" class="danger" type="button" disabled>
-        Delete
+        删除
       </button>
       <button id="revokeRoomButton" type="button" disabled>
-        Revoke
+        停用
       </button>
     </div>
   </div>
@@ -473,8 +550,58 @@ gap: 16px; /* Increase or decrease as needed */
       <div class="room-list" id="roomList"></div>
     </section>
   </main>
+<dialog id="expiry-reminder">
+  <p id="expiry-reminder-message"></p>
+  <div class="reminder-buttons">
+    <button id="cancel-button" type="button">取消</button>
+    <button id="dismiss-reminders" type="button">不再提醒</button>
+  </div>
+</dialog>
 
-  <script>
+  <script> document.addEventListener("DOMContentLoaded", () => {
+  const expiry = localStorage.getItem("expiry");
+  const expiryTime = expiry ? Date.parse(expiry) : NaN;
+  //const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
+  const THREE_DAYS = 3 * 60 * 1000;
+
+  const REMINDER_DISMISSED_KEY = "expiryReminderDismissed";
+
+  if (!Number.isFinite(expiryTime)) {
+    console.warn("Reminder not shown: expiry is missing or invalid.");
+    return;
+  }
+
+  const remaining = expiryTime - Date.now();
+
+  if (
+    remaining > 0 &&
+    remaining <= THREE_DAYS &&
+    localStorage.getItem(REMINDER_DISMISSED_KEY) !== "true"
+  ) {
+    const dialog = document.getElementById("expiry-reminder");
+    const message = document.getElementById("expiry-reminder-message");
+    const cancelButton = document.getElementById("cancel-button");
+    const dismissButton = document.getElementById("dismiss-reminders");
+
+    if (!dialog || !message || !cancelButton || !dismissButton) {
+      console.error("Reminder dialog HTML is missing or its IDs don't match.");
+      return;
+    }
+
+    message.textContent =
+      `提示💡：您的订阅到期时间是 ${new Date(expiryTime).toLocaleString().replaceAll('/', '-')}.`;
+
+    if (!dialog.open) dialog.showModal();
+
+    cancelButton.addEventListener("click", () => dialog.close());
+
+    dismissButton.addEventListener("click", () => {
+      localStorage.setItem(REMINDER_DISMISSED_KEY, "true");
+      dialog.close();
+    });
+  }
+});
+
   const toggleAddRoom = document.getElementById("toggleAddRoom");
   const addRoomForm = document.getElementById("addRoomForm");
  toggleAddRoom.addEventListener("click", () => {
@@ -489,29 +616,29 @@ gap: 16px; /* Increase or decrease as needed */
     const defaultRooms = [
       {
         number: "101",
-        type: "Single",
-        status: "available",
+        type: "单人房",
+        status: "可用",
         guest: "",
         checkoutDate: ""
       },
       {
         number: "102",
-        type: "Double",
-        status: "occupied",
+        type: "大床房",
+        status: "使用中",
         guest: "Jordan Lee",
         checkoutDate: ""
       },
       {
         number: "103",
-        type: "Suite",
-        status: "cleaning",
+        type: "套房",
+        status: "待打扫",
         guest: "",
         checkoutDate: ""
       },
       {
         number: "201",
-        type: "Double",
-        status: "available",
+        type: "大床房",
+        status: "可用",
         guest: "",
         checkoutDate: ""
       }
@@ -578,18 +705,18 @@ gap: 16px; /* Increase or decrease as needed */
         );
   document.getElementById("totalCount").textContent = rooms.length;
       document.getElementById("availableCount").textContent =
-        rooms.filter(room => room.status === "available").length;
+        rooms.filter(room => room.status === "可用").length;
       document.getElementById("occupiedCount").textContent =
-        rooms.filter(room => room.status === "occupied").length;
+        rooms.filter(room => room.status === "使用中").length;
       document.getElementById("cleaningCount").textContent =
-        rooms.filter(room => room.status === "cleaning").length;
+        rooms.filter(room => room.status === "待打扫").length;
 
 document.getElementById("ofsCount").textContent =
-  rooms.filter(room => room.status === "out-of-service").length;
+  rooms.filter(room => room.status === "不可用").length;
 
       if (visibleRooms.length === 0) {
         roomList.innerHTML =
-          '<div class="empty">No rooms match this filter.</div>';
+          '<div class="empty">没有符合条件的房间</div>';
         updateDeleteButton();
         return;
       }
@@ -597,42 +724,42 @@ document.getElementById("ofsCount").textContent =
       roomList.innerHTML = visibleRooms.map(room => {
         let action = "";
 
-        if (room.status === "out-of-service") {
+        if (room.status === "不可用") {
          action = `
-        <button type="button" data-action="reuse" data-room="${room.number}">
-          Reuse
+        <button type="button" data-action="复用" data-room="${room.number}">
+          复用
         </button>`;
-    } else if (room.status === "available") {
+    } else if (room.status === "可用") {
           action = `
-            <button class="primary" data-action="checkin"
+            <button class="primary" data-action="入住"
               data-room="${escapeHtml(room.number)}">
-              Check in
+              入住
             </button>
           `;
-        } else if (room.status === "occupied") {
+        } else if (room.status === "使用中") {
           action = `
-            <button class="danger" data-action="checkout"
+            <button class="danger" data-action="退房"
               data-room="${escapeHtml(room.number)}">
-              Check out
+              退房
             </button>
           `;
         } else {
           action = `
-            <button class="primary" data-action="clean"
+            <button class="primary" data-action="已打扫"
               data-room="${escapeHtml(room.number)}">
-              Mark clean
+              已打扫
             </button>
            `;
         }
      
               
         let stayInfo = "";
-        if (room.status === "occupied" && room.checkoutDate) {
+        if (room.status === "使用中" && room.checkoutDate) {
           const days = getDaysRemaining(room.checkoutDate);
           stayInfo = days === null
             ? ""
-            : `<p class="stay">${days} day${days === 1 ? "" : "s"} remaining
-               (checkout: ${escapeHtml(room.checkoutDate)})</p>`;
+            : `<p class="stay">剩余 ${days} ${days === 1 ? "天" : "天"} 
+               (退房: ${escapeHtml(room.checkoutDate)})</p>`;
         }
 
         return `
@@ -653,7 +780,7 @@ document.getElementById("ofsCount").textContent =
          
             <p class="guest">
               ${room.guest
-                ? `Guest: ${escapeHtml(room.guest)}`
+                ? `房客: ${escapeHtml(room.guest)}`
                 : ""}
             </p>
             ${stayInfo}
@@ -671,20 +798,20 @@ document.getElementById("ofsCount").textContent =
     room => String(room.number) === String(selectedRoomNumber)
   );
 
-  const canDelete = selectedRoom && selectedRoom.status !== "occupied";
+  const canDelete = selectedRoom && selectedRoom.status !== "使用中";
 
   //deleteRoomButton.disabled = !canDelete;
   roomActionsButton.disabled = !selectedRoom; 
 
  deleteRoomButton.disabled =
-    !selectedRoom || selectedRoom.status === "occupied";
+    !selectedRoom || selectedRoom.status === "使用中";
 
   //revokeRoomButton.disabled =
-    !selectedRoom || selectedRoom.status !== "out-of-service";
+    !selectedRoom || selectedRoom.status !== "不可用";
 
   revokeRoomButton.disabled =
   !selectedRoom ||
-  !["available", "cleaning"].includes(selectedRoom.status);
+  !["可用", "待打扫"].includes(selectedRoom.status);
 }
     document.getElementById("addRoomForm").addEventListener("submit", event => {
       event.preventDefault();
@@ -694,14 +821,14 @@ document.getElementById("ofsCount").textContent =
       const number = numberInput.value.trim();
 
       if (!number) {
-        alert("Enter a room number.");
+        alert("请输入房间号");
         return;
       }
 
       if (rooms.some(
         room => String(room.number).toLowerCase() === number.toLowerCase()
       )) {
-        alert("That room number already exists.");
+        alert("❗️该房间号已经存在");
         numberInput.focus();
         return;
       }
@@ -709,7 +836,7 @@ document.getElementById("ofsCount").textContent =
       rooms.push({
         number,
         type: typeInput.value,
-        status: "available",
+        status: "可用",
         guest: "",
         checkoutDate: ""
       });
@@ -733,12 +860,12 @@ document.getElementById("ofsCount").textContent =
 
         const action = actionButton.dataset.action;
 
-        if (action === "checkin") {
-          const guest = prompt("Enter the guest's name:");
+        if (action === "入住") {
+          const guest = prompt("请输入房客名字:");
           if (!guest || !guest.trim()) return;
 
           const checkoutDate = prompt(
-            "Enter the checkout date (YYYY-MM-DD):"
+            "请输入退房时间年-月-日，例如：2027-01-01):"
           );
           if (!checkoutDate) return;
 
@@ -747,22 +874,22 @@ document.getElementById("ofsCount").textContent =
             Number.isNaN(parsedDate.getTime()) ||
             !/^\d{4}-\d{2}-\d{2}$/.test(checkoutDate)
           ) {
-            alert("Enter a valid date in YYYY-MM-DD format.");
+            alert("请输入有效日期 年-月-日，例如：2027-01-01");
             return;
           }
 
           room.guest = guest.trim();
           room.checkoutDate = checkoutDate;
-          room.status = "occupied";
-        } else if (action=== "checkout") {
+          room.status = "使用中";
+        } else if (action=== "退房") {
           room.guest = "";
           room.checkoutDate = "";
-          room.status = "cleaning";
-        } else if (action === "clean") {
-          room.status = "available";
-        } else if (action === "reuse") {
-  if (room.status !== "out-of-service") return;
-  room.status = "available";
+          room.status = "待打扫";
+        } else if (action === "已打扫") {
+          room.status = "可用";
+        } else if (action === "复用") {
+  if (room.status !== "不可用") return;
+  room.status = "可用";
 }
 
         saveRooms();
@@ -793,12 +920,12 @@ deleteRoomButton.addEventListener("click", () => {
 });
 
    function deleteRoom(room) {
-  if (room.status === "occupied") {
-    alert(`Room ${room.number} is occupied and cannot be deleted.`);
+  if (room.status === "使用中") {
+    alert(`房间 ${room.number} 使用中，不可删除`);
     return;
   }
 
-  if (!confirm(`Delete room ${room.number}? This can’t be undone.`)) {
+  if (!confirm(`删除 ${room.number} 房间吗? 此操作不可恢复`)) {
     return;
   }
 
@@ -819,9 +946,9 @@ deleteRoomButton.addEventListener("click", () => {
     item => String(item.number) === String(roomNumber)
   );
 
-  if (!room || !["available", "cleaning"].includes(room.status)) return;
+  if (!room || !["可用", "待打扫"].includes(room.status)) return;
 
-  room.status = "out-of-service";
+  room.status = "不可用";
   selectedRoomNumber = null;
   saveRooms();
   render();
@@ -841,6 +968,7 @@ window.addEventListener("load", () => {
 
 document.getElementById("exportBackupButton").addEventListener("click", () => {
     const backup = {
+    
     version: 1,
     exportedAt: new Date().toISOString(),
     rooms
@@ -854,7 +982,7 @@ document.getElementById("exportBackupButton").addEventListener("click", () => {
     const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `hotel-rooms-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  link.download = `客房管理(备份)-${new Date().toISOString().slice(0, 10)}.json`;
   link.click();
   URL.revokeObjectURL(url);
 });
@@ -879,13 +1007,13 @@ backupFileInput.addEventListener("change", async () => {
         room &&
         room.number != null &&
         typeof room.type === "string" &&
-        ["available", "occupied", "cleaning"].includes(room.status)
+        ["可用", "使用中", "待打扫"].includes(room.status)
       )
     ) {
-      throw new Error("The file does not contain valid room data.");
+      throw new Error("该文件没有有效的房间数据");
     }
 
-    if (!confirm("Importing will replace the current room list. Continue?")) {
+    if (!confirm("导入数据将覆盖当前房间列表，是否继续？")) {
       return;
     }
 
@@ -893,9 +1021,9 @@ backupFileInput.addEventListener("change", async () => {
     selectedRoomNumber = null;
     saveRooms();
     render();
-    alert("Room data imported successfully.");
+    alert("房间数据成功导入");
   } catch (error) {
-    alert(`Could not import this backup: ${error.message}`);
+    alert(`无法导入该备份: ${error.message}`);
   } finally {
     backupFileInput.value = "";
   }
@@ -909,7 +1037,7 @@ if (hotelName) {
     heading.textContent = hotelName;
 } else {
   // Show the registration/login screen or a helpful message.
-    heading.textContent = "Could not load hotel";
+    heading.textContent = "旅馆名称无法加载";
 }
 });
 
