@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Create an account</title>
+  <title>创建账号</title>
   <style>
     * {
       box-sizing: border-box;
@@ -102,100 +102,99 @@
 </head>
 <body>
   <main>
-    <h1>Create your account</h1>
-    <p class="intro">Enter your hotel and account details to get started.</p>
+    <h1>创建账号</h1>
+    <p class="intro">请填写如下表格</p>
 
     <form id="registrationForm">
       <div class="field">
-        <label for="username">Username</label>
+        <label for="username">用户名 (*最少3个字符)</label>
         <input id="username" name="username" type="text" autocomplete="username"
                required minlength="3" />
       </div>
 
       <div class="field">
-        <label for="password">Password</label>
+        <label for="password">密码 (*最少6位)</label>
         <input id="password" name="password" type="password"
                autocomplete="new-password" required minlength="6" />
       </div>
 
       <div class="field">
-        <label for="confirmPassword">Confirm password</label>
+        <label for="confirmPassword">确认密码</label>
         <input id="confirmPassword" name="confirmPassword" type="password"
                autocomplete="new-password" required minlength="6" />
       </div>
 
       <div class="field">
-        <label for="hotelName">Name of hotel</label>
+        <label for="hotelName">旅馆名称</label>
         <input id="hotelName" name="hotel_name" type="text" required />
       </div>
 
       <div class="field">
-        <label for="hotelAddress">Hotel address</label>
+        <label for="hotelAddress">旅馆地址</label>
         <input id="hotelAddress" name="address" type="text"
                autocomplete="street-address" required />
       </div>
 
       <div class="field">
-        <label for="phone">Phone number <span class="optional">(optional)</span></label>
+        <label for="phone">手机号<span class="optional">(选填)</span></label>
         <input id="phone" name="phone" type="tel" autocomplete="tel" />
       </div>
 
       <div class="field">
-        <label for="email">Email address <span class="optional">(optional)</span></label>
+        <label for="email">电子邮箱<span class="optional">(选填)</span></label>
         <input id="email" name="email" type="email" autocomplete="email" />
       </div>
 
-      <button id="submitButton" type="submit">Register</button>
+      <button id="submitButton" type="submit">注册</button>
       <p id="message" role="status" aria-live="polite"></p>
     </form>
   </main>
 
   <script>
-  const form = document.getElementById("registrationForm");
-  const message = document.getElementById("message");
-  const submitButton = document.getElementById("submitButton");
+    const form = document.getElementById("registrationForm");
+    const message = document.getElementById("message");
+    const submitButton = document.getElementById("submitButton");
 
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    message.textContent = "";
-    message.classList.remove("success");
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      message.textContent = "";
+      message.classList.remove("success");
 
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
-    const hotelName = String(data.hotel_name || "").trim();
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+      const hotelName=data.hotelName
 
-    if (data.password !== data.confirmPassword) {
-      message.textContent = "The passwords do not match.";
-      return;
-    }
-
-    delete data.confirmPassword;
-    submitButton.disabled = true;
-
-    try {
-      const response = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Registration failed.");
+      if (data.password !== data.confirmPassword) {
+        message.textContent = "密码错误";
+        return;
       }
 
-      localStorage.setItem("hotelName", hotelName);
-      message.classList.add("success");
-      message.textContent = "Registration successful. You can now log in.";
-      form.reset();
-    } catch (error) {
-      message.textContent =
-        error.message || "Unable to register. Please try again.";
-    } finally {
-      submitButton.disabled = false;
-    }
-  });
-</script>
+      delete data.confirmPassword;
+      submitButton.disabled = true;
+
+      try {
+        const response = await fetch("/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || "Registration failed.");
+        }
+ 
+    const hotelName = document.getElementById("hotelName").value; localStorage.setItem("hotelName", hotelName);
+  message.classList.add("success");
+        message.textContent = "注册成功！";
+        form.reset();
+      } catch (error) {
+        message.textContent = error.message || "无法注册，请重试";
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+  </script>
 </body>
 </html>
