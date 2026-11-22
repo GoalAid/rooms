@@ -4,7 +4,9 @@ const express = require("express");
 const path = require("path");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const app = require("../server");
 
+//module.exports = app;
 const app = express();
 
 const publicDir = path.join(__dirname, "public");
@@ -291,6 +293,10 @@ app.use((req, res) => {
 
 const port = Number(process.env.PORT || 3000);
 
-app.listen(port, "0.0.0.0", () => {
-  console.log(`Server listening on http://localhost:${port}`);
-});
+if (require.main === module) {
+  app.listen(port, "0.0.0.0", () => {
+    console.log(`Server listening on http://localhost:${port}`);
+  });
+}
+
+module.exports = app;
