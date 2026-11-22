@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Hotel Service</title>
+  <title>客房管理登录</title>
   <style>
     body { font: 16px system-ui, sans-serif; max-width: 480px; margin: 3rem auto; padding: 0 1rem; }
     input, button { box-sizing: border-box; width: 100%; padding: .7rem; margin: .4rem 0; }
@@ -12,13 +12,13 @@
   </style>
 </head>
 <body>
-  <h1>Hotel Service</h1>
+  <h1>客房管理•登录</h1>
   <form id="login-form">
-    <label>Username <input name="username" required></label>
-    <label>Password <input name="password" type="password" required></label>
-    <button type="submit">Log in</button>
+    <label>用户名<input name="username" required></label>
+    <label>密码<input name="password" type="password" required></label>
+    <button type="submit">登录</button>
   </form>
-  <p><a class="button" href="/register.html">Create an account</a></p>
+  <p><a class="button" href="/register.html">创建账号</a></p>
   <pre class="message" id="result" aria-live="polite"></pre>
 
   <script>
