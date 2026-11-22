@@ -2,7 +2,6 @@ require("dotenv").config();
 
 const express = require("express");
 const path = require("path");
-const Database = require("better-sqlite3");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
@@ -64,7 +63,6 @@ createTables().catch((error) => {
   process.exit(1);
 });
 
-
 function addDays(date, days) {
   const result = new Date(date);
   result.setUTCDate(result.getUTCDate() + days);
@@ -119,6 +117,7 @@ function hasServiceAccess(user) {
   return now < trialEnd || now < subscriptionEnd;
 }
 
+
 // Serve the two HTML pages explicitly.
   app.get("/", (req, res) => {
   res.sendFile(path.join(publicDir, "index.html"));
@@ -126,10 +125,6 @@ function hasServiceAccess(user) {
 
   app.get("/dashboard", (req, res) => {
      return res.sendFile(path.join(publicDir, "dashboard.html"));
-
-  if (!user) {
-    return res.redirect("/login");
-  }
 
   const account = getAccountStatus(user);
 
@@ -147,7 +142,7 @@ app.post("/api/register", async (req, res) => {
     password.length < 6
   ) {
     return res.status(400).json({
-      error: "Username must be at least 3 characters; password at least 6.",
+      error: "用户名不少于3个字符，密码至少6位",
     });
   }
 
@@ -169,9 +164,9 @@ app.post("/api/register", async (req, res) => {
     phone || null,
     trialEndsAt,
   ]
-);
+    );
 
-const user = await getUser(result.rows[0].id);
+    const user = await getUser(result.rows[0].id);
 
     return res.status(201).json({
       token: createToken(user),
@@ -180,11 +175,11 @@ const user = await getUser(result.rows[0].id);
     });
   } catch (error) {
     if (String(error).includes("UNIQUE")) {
-      return res.status(409).json({ error: "That username is already taken." });
+      return res.status(409).json({ error: "用户名已被注册" });
     }
 
     console.error("Registration error:", error);
-    return res.status(500).json({ error: "Could not create account." });
+    return res.status(500).json({ error: "无法创建账号" });
   }
 });
 
@@ -193,9 +188,7 @@ app.post("/api/login", async (req, res) => {
   const { username, password } = req.body || {};
 
   if (typeof username !== "string" || typeof password !== "string") {
-    return res.status(400).json({
-      error: "Username and password are required.",
-    });
+    return res.status(400).json({ error: "请输入用户名和密码" });
   }
 
   try {
@@ -203,15 +196,13 @@ app.post("/api/login", async (req, res) => {
       "SELECT * FROM users WHERE username = $1",
       [username.trim()]
     );
-    const user = result.rows[0];
+   const user = result.rows[0];
 
-    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
-      return res.status(401).json({
-        error: "Incorrect username or password.",
-      });
-    }
+  if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+    return res.status(401).json({ error: "❗️用户名或密码不正确" });
+  }
 
-    return res.json({
+  return res.json({
       token: createToken(user),
       username: user.username,
     });
@@ -221,8 +212,32 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// Protected dashboard API.
-app.get("/api/hotel/dashboard", requireLogin, async (req, res) => {
+app.get("/api/subscription/status", requireLogin, async (req, res) => {
+  try {
+    const user = await getUser(req.auth.userId);
+    if (!user) return res.status(401).json({ error: "⚠️该用户不存在" });
+
+    const now = Date.now();
+    const trialEnd = Date.parse(user.trial_ends_at);
+    const paidEnd = Date.parse(user.subscription_ends_at || "");
+
+    const entitled =
+      (Number.isFinite(trialEnd) && now < trialEnd) ||
+      (Number.isFinite(paidEnd) && now < paidEnd);
+
+    res.json({
+      entitled,
+      hotelName: user.hotel_name,
+      trialEndsAt: user.trial_ends_at,
+      subscriptionEndsAt: user.subscription_ends_at
+    });
+  } catch (error) {
+    console.error("Subscription status error:", error);
+    res.status(500).json({ error: "Could not verify subscription." });
+  }
+});
+
+  app.get("/api/hotel/dashboard", requireLogin, async (req, res) => {
   try {
     if (!req.auth?.userId) {
       return res.status(401).json({ error: "Authentication required." });
@@ -231,7 +246,7 @@ app.get("/api/hotel/dashboard", requireLogin, async (req, res) => {
     const user = await getUser(req.auth.userId);
 
     if (!user) {
-      return res.status(401).json({ error: "User not found." });
+      return res.status(401).json({ error: "⚠️该用户不存在" });
     }
 
     const now = Date.now();
@@ -245,9 +260,7 @@ app.get("/api/hotel/dashboard", requireLogin, async (req, res) => {
 
     if (!paidActive && !trialActive) {
       return res.status(403).json({
-        error: "Your trial or subscription has expired.",
-        trialEndsAt: user.trial_ends_at,
-        subscriptionEndsAt: user.subscription_ends_at,
+        error: "⚠️您的试用/订阅已过期",
       });
     }
 
@@ -258,48 +271,13 @@ app.get("/api/hotel/dashboard", requireLogin, async (req, res) => {
       expiresAt: paidActive
         ? user.subscription_ends_at
         : user.trial_ends_at,
-      trialEndsAt: user.trial_ends_at,
     });
   } catch (error) {
-    console.error("Dashboard error:", error);
-    return res.status(500).json({ error: "Could not load dashboard." });
+    console.error("Dashboard API error:", error);
+    return res.status(500).json({ error: "Could not load account status." });
   }
 });
 
-function getAccountStatus(user) {
-  const now = Date.now();
-
-  if (user.subscription_ends_at) {
-    const subscriptionExpiry = Date.parse(user.subscription_ends_at);
-
-    if (Number.isFinite(subscriptionExpiry) && subscriptionExpiry > now) {
-      return {
-        status: "Active",
-        access: true,
-        expiryDate: user.subscription_ends_at,
-        message: `Your plan is active until ${user.subscription_ends_at}`,
-      };
-    }
-  }
-
-  const trialExpiry = Date.parse(user.trial_ends_at);
-
-  if (Number.isFinite(trialExpiry) && trialExpiry > now) {
-    return {
-      status: "Trial",
-      access: true,
-      expiryDate: user.trial_ends_at,
-      message: `Your 7-day trial ends on ${user.trial_ends_at}`,
-    };
-  }
-
-  return {
-    status: "Expired",
-    access: false,
-    expiryDate: null,
-    message: "Your trial has ended. Choose a plan to continue.",
-  };
-}
 
 // Unknown API paths should return JSON, not the HTML page.
 app.use("/api", (req, res) => {
