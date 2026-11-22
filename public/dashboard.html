@@ -1,55 +1,235 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>客房管理登录</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>控制面板</title>
   <style>
-    body { font: 16px system-ui, sans-serif; max-width: 480px; margin: 3rem auto; padding: 0 1rem; }
-    input, button { box-sizing: border-box; width: 100%; padding: .7rem; margin: .4rem 0; }
-    pre { white-space: pre-wrap; overflow-wrap: anywhere; }
-    .message{ color: red}
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: #f5f7fb;
+      color: #172033;
+      font-family: Arial, sans-serif;
+    }
+
+    main {
+      width: 100%;
+      max-width: 620px;
+    }
+
+    h1 {
+      margin-bottom: 24px;
+      font-size: 1.8rem;
+      text-align: center;
+    }
+     
+     p {
+      font-size: 1.125em;
+     }
+
+     .account-details p {
+       margin: 4px 0;
+       line-height: 1.3;
+     }
+
+    .intro {
+      margin: 0 0 18px;
+      color: #667085;
+      line-height: 1.5;
+    }
+
+    .card {
+      padding: 16px;
+      border: 1px solid #e5e9f0;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 4px 16px rgb(30 45 75 / 6%);
+     }
+
+    .plans {
+       display: grid;
+       grid-template-columns: 1fr 1fr;
+       gap: 10px;
+     }
+
+   .plan {
+      padding: 12px;
+      border: 1px solid #e5e9f0;
+      border-radius: 10px;
+    }
+
+   .plan h2 {
+      margin: 0 0 5px;
+      font-size: 1rem;
+   }
+
+   .price {
+      margin: 0 0 4px;
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+
+   .duration {
+      margin: 0 0 10px;
+      color: #667085;
+      font-size: 0.85rem;
+   }
+
+   @media (max-width: 600px) {
+    .plans {
+    grid-template-columns: 1fr;
+    }
+   }
+
+    .button {
+      display: block;
+      padding: 11px 14px;
+      border-radius: 8px;
+      background: #3659c9;
+      color: #fff;
+      font-weight: 700;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .am {
+      margin: 10px 0;
+      font-size: 1rem;
+      font-style: italic;
+      line-height: 1.3;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
   </style>
 </head>
 <body>
-  <h1>客房管理•登录</h1>
-  <form id="login-form">
-    <label>用户名<input name="username" required></label>
-    <label>密码<input name="password" type="password" required></label>
-    <button type="submit">登录</button>
-  </form>
-  <p><a class="button" href="/register.html">创建账号</a></p>
-  <pre class="message" id="result" aria-live="polite"></pre>
+  <main>
+    <section id="accountView">
+  <h1 id="account-status">状态加载中...</h1>
 
-  <script>
-    let token = "";
-    const result = document.querySelector("#result");
+<div class="account-details">
+<p id="account-username"></p>
+<p style="font-weight: bold; font-size: 1.5em; color: green" id="account-hotel"></p>
+  <p style="font-weight: bold; color:#896415" id="account-expiry"></p>
+</div>
+  <p class="am"; id="account-message"></p>
+</section>
 
-    document.querySelector("#login-form").addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const form = new FormData(event.currentTarget);
+<section id="plansView" hidden>
+  <p class="intro">请选择订阅计划</p>
+  <div class="card">
+        <div class="plans">
+          <article class="plan">
+            <h2>每月</h2>
+            <p class="price">5元</p>
+            <p class="duration">一个月</p>
+            <a class="button" href="/payment.html">按月</a>
+          </article>
 
-      try {
-        const response = await fetch("/api/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            username: form.get("username"),
-            password: form.get("password")
-          })
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Login failed");
-        token = data.token;
-      //  result.textContent = "Logged in successfully.";
+          <article class="plan">
+           <h2>每年</h2>
+           <p class="price">50元</p>
+           <p class="duration">一年</p>
+           <a class="button" href="/payment.html">按年</a>
+          </article>
+        </div>
+      </div>
+</section>
+<p><a id="rooms-link" href="/rooms.html" hidden>
+    打开客房管理
+  </a>
+</p>
+</main>
 
+<script>
+  async function loadDashboard() {
+    const statusElement = document.getElementById("account-status");
+    const usernameElement = document.getElementById("account-username");
+    const hotelElement = document.getElementById("account-hotel");
+    const expiryElement = document.getElementById("account-expiry");
+    const messageElement = document.getElementById("account-message");
+    const plansView = document.getElementById("plansView");
+    const token = localStorage.getItem("token");
+    const roomsLink = document.getElementById("rooms-link");
 
-localStorage.setItem("token", data.token);
-  window.location.href = "/dashboard";
-      } catch (error) {
-        result.textContent = error.message;
+    if (!token) {
+      statusElement.textContent = "请登录查看您的账号";
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/hotel/dashboard", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await response.json();
+     
+      if (!response.ok) {
+        statusElement.textContent =
+          data.error || "无法加载账号状态";
+        plansView.hidden = false;
+        return;
       }
-    });  
-  </script>
+
+     usernameElement.textContent = `用户名: ${data.username || "Not provided"}`;
+      hotelElement.textContent = `${data.hotelName || "Not provided"}`;
+      localStorage.setItem("hotelName", data.hotelName);
+
+      const expiry = new Date(data.expiresAt);
+
+const expiryTime = Date.parse(data.expiresAt);
+
+if (Number.isFinite(expiryTime)) {
+  const newExpiryDate = new Date(expiryTime).toISOString();
+
+  const previousExpiry = localStorage.getItem("expiry");
+
+  // Reset the dismissal only when the expiry actually changed.
+  if (previousExpiry !== newExpiryDate) {
+    localStorage.removeItem("expiryReminderDismissed");
+  }
+localStorage.setItem("expiry", newExpiryDate);
+} else {
+  localStorage.removeItem("expiry");
+}
+
+      if (Number.isNaN(expiry.getTime())) {
+        statusElement.textContent = "过期日期未知";
+        return;
+      }
+
+      const paid = data.status === "Active";
+      statusElement.textContent = paid ? "订阅使用中" : "7天试用中";
+
+      roomsLink.hidden = false;
+
+      expiryElement.textContent =
+        `过期: ${expiry.toLocaleDateString().replaceAll('/', '-')}`;
+
+      messageElement.textContent = paid
+        ? "订阅已生效"
+        : "(* 您可以在试用的任意时间选择一个订阅计划)";
+
+      // Show plan options for trial users, but not paid subscribers.
+      plansView.hidden = paid;
+    } catch (error) {
+      console.error(error);
+      statusElement.textContent = "无法加载账号状态";
+    }
+  }
+   
+  loadDashboard();
+</script>
 </body>
 </html>
