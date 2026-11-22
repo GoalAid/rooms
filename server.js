@@ -33,7 +33,7 @@ const pool = new Pool({
 
 async function createTables() {
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
+    CREATE TABLE IF NOT EXISTS users1 (
       id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
       username TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
@@ -47,7 +47,7 @@ async function createTables() {
   `);
 
   await pool.query(`
-  CREATE TABLE IF NOT EXISTS payment_requests (
+  CREATE TABLE IF NOT EXISTS payment_requests1 (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id),
     plan TEXT NOT NULL,
@@ -103,7 +103,7 @@ function requireLogin(req, res, next) {
 
 async function getUser(userId) {
   const result = await pool.query(
-    'SELECT * FROM users WHERE id = $1',
+    'SELECT * FROM users1 WHERE id = $1',
     [userId]
   );
   return result.rows[0] ?? null;
@@ -153,7 +153,7 @@ app.post("/api/register", async (req, res) => {
     const trialEndsAt = addDays(new Date(), 7).toISOString();
 
     const result = await pool.query(
-  `INSERT INTO users
+  `INSERT INTO users1
      (username, password_hash, hotel_name, address, email, phone, trial_ends_at)
    VALUES ($1, $2, $3, $4, $5, $6, $7)
    RETURNING id`,
@@ -195,7 +195,7 @@ app.post("/api/login", async (req, res) => {
 
   try {
     const result = await pool.query(
-      "SELECT * FROM users WHERE username = $1",
+      "SELECT * FROM users1 WHERE username = $1",
       [username.trim()]
     );
    const user = result.rows[0];
