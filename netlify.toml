@@ -7,3 +7,8 @@
   to = "/.netlify/functions/login"
   status = 200
   force = true
+  
+  from = "/api/register"
+  to = "/.netlify/functions/register"
+  status = 200
+  force = true
