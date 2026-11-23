@@ -1,3 +1,7 @@
+[build]
+  command = "vite build"
+  publish = "public"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
