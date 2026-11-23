@@ -1,6 +1,26 @@
 const { Pool } = require("pg");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const ca = process.env.DATABASE_CA?.replace(/\\n/g, "\n").trim();
+
+let sslParams = [];
+try {
+  const url = new URL(process.env.DATABASE_URL);
+  sslParams = [...url.searchParams.keys()].filter((key) =>
+    /ssl|cert/i.test(key)
+  );
+} catch {
+  sslParams = ["invalid or missing DATABASE_URL"];
+}
+
+console.log("DB TLS diagnostics", {
+  hasCa: Boolean(ca),
+  caLength: ca?.length ?? 0,
+  hasPemMarkers:
+    Boolean(ca?.includes("-----BEGIN CERTIFICATE-----")) &&
+    Boolean(ca?.includes("-----END CERTIFICATE-----")),
+  sslParams,
+});
 
 // Reuse the pool while this function instance stays warm.
 const pool = new Pool({
