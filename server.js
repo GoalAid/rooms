@@ -19,7 +19,58 @@ if (!JWT_SECRET) {
 }
 
 const { Pool } = require('pg');
-const fs = require('fs');
+//const fs = require('fs');
+const fs = require("fs");
+const crypto = require("crypto");
+const multer = require("multer");
+const { rateLimit } = require("express-rate-limit");
+
+const uploadDir = path.join(__dirname, "private-uploads");
+fs.mkdirSync(uploadDir, { recursive: true });
+
+const allowedFiles = {
+  ".jpg": ["image/jpeg"],
+  ".jpeg": ["image/jpeg"],
+  ".png": ["image/png"],
+  ".pdf": ["application/pdf"],
+  ".doc": ["application/msword"],
+  ".docx": [
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ],
+  ".txt": ["text/plain"],
+};
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, callback) => callback(null, uploadDir),
+    filename: (_req, _file, callback) => {
+      callback(null, `${crypto.randomUUID()}`);
+    },
+  }),
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+    files: 1,
+    fields: 1,
+  },
+  fileFilter: (_req, file, callback) => {
+    const extension = path.extname(file.originalname).toLowerCase();
+    const allowedMimeTypes = allowedFiles[extension];
+
+    if (!allowedMimeTypes || !allowedMimeTypes.includes(file.mimetype)) {
+      return callback(new Error("Unsupported file type."));
+    }
+
+    callback(null, true);
+  },
+});
+
+const messageLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+});
+
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -54,6 +105,18 @@ async function createTables() {
     received_at TIMESTAMPTZ,
     approved_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL
+  )
+`);
+
+  await pool.query(`
+  CREATE TABLE IF NOT EXISTS visitor_messages (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    message TEXT NOT NULL DEFAULT '',
+    attachment_name TEXT,
+    attachment_path TEXT,
+    attachment_type TEXT,
+    attachment_size BIGINT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )
 `);
 }
@@ -117,18 +180,9 @@ function hasServiceAccess(user) {
   return now < trialEnd || now < subscriptionEnd;
 }
 
-
 // Serve the two HTML pages explicitly.
   app.get("/", (req, res) => {
   res.sendFile(path.join(publicDir, "index.html"));
-});
-
-  app.get("/dashboard", (req, res) => {
-     return res.sendFile(path.join(publicDir, "dashboard.html"));
-
-  const account = getAccountStatus(user);
-
-  res.render("dashboard", { user, account });
 });
 
 // Register.
@@ -278,6 +332,74 @@ app.get("/api/subscription/status", requireLogin, async (req, res) => {
   }
 });
 
+app.post(
+  "/api/messages",
+  messageLimiter,
+  (req, res, next) => {
+    upload.single("attachment")(req, res, (error) => {
+      if (!error) return next();
+
+      if (req.file?.path) {
+        fs.unlink(req.file.path, () => {});
+      }
+
+      if (error instanceof multer.MulterError) {
+        const status = error.code === "LIMIT_FILE_SIZE" ? 413 : 400;
+        return res.status(status).json({
+          error:
+            error.code === "LIMIT_FILE_SIZE"
+              ? "File must be 10 MB or smaller."
+              : "Invalid upload.",
+        });
+      }
+
+      return res.status(400).json({ error: error.message });
+    });
+  },
+  async (req, res) => {
+    const message = typeof req.body.message === "string"
+      ? req.body.message.trim()
+      : "";
+    const file = req.file;
+
+    if (message.length > 5000) {
+      if (file) fs.unlink(file.path, () => {});
+      return res.status(400).json({ error: "Message is too long." });
+    }
+
+    if (!message && !file) {
+      return res.status(400).json({
+        error: "Enter a message or attach a file.",
+      });
+    }
+
+    // Keep the original name only as display metadata; the saved filename is random.
+    const originalName = file
+      ? path.basename(file.originalname).replace(/[\r\n]/g, "").slice(0, 255)
+      : null;
+
+    try {
+      await pool.query(
+        `INSERT INTO visitor_messages
+          (message, attachment_name, attachment_path, attachment_type, attachment_size)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          message,
+          originalName,
+          file ? path.basename(file.path) : null,
+          file?.mimetype ?? null,
+          file?.size ?? null,
+        ]
+      );
+
+      return res.status(201).json({ ok: true });
+    } catch (error) {
+      if (file) fs.unlink(file.path, () => {});
+      console.error("Visitor message error:", error);
+      return res.status(500).json({ error: "Could not save your message." });
+    }
+  }
+);
 
 // Unknown API paths should return JSON, not the HTML page.
 app.use("/api", (req, res) => {
